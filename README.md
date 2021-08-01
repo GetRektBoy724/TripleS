@@ -1,5 +1,5 @@
 # TripleS
-I always hate the idea of hard-coding syscall stub on our malware,cause syscall is version dependent.And after I know that D/Invoke has a function to get the syscall stub from the disk,I challenged myself,can I make one too? And can I make it even better? Well,this is the result of that challenge.TripleS or 3S is short for Syscall Stub Stealer.It freshly "steal" syscall stub straight from the disk.You can use TripleS for evading userland hooks from EDRs/AVs.TripleS only use 1 unmanaged API,other than that,its all .NET's managed function.
+I always hate the idea of hard-coding syscall stub on our malware,cause syscall is version dependent.And after I know that D/Invoke has a function to get the syscall stub from the disk,I challenged myself,can I make one too? And can I make it even better? Well,this is the result of that challenge.TripleS or 3S is short for Syscall Stub Stealer.It freshly "steal" syscall stub straight from the disk.You can use TripleS for evading userland hooks from EDRs/AVs.TripleS only use 1 unmanaged API(invoked dynamicly),other than that,its all .NET's managed function.
  Anyway,i suck at making description,so if you have any question,you can DM me on Discord.
 
 # Usage
