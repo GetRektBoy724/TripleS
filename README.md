@@ -1,4 +1,4 @@
-# TripleS - Stealing Syscall Stub, Modernized
+# TripleS - Extracting Syscall Stub, Modernized
 TripleS or 3S is short for Syscall Stub Stealer. It freshly "steal" syscall stub straight from the disk. You can use TripleS for evading userland hooks from EDRs/AVs.TripleS doesnt invoke any unmanaged API, its all .NET's managed function. I cant say that its better than D/Invoke's GetSyscallStub, but in my opinion, its better.
 Anyway, I suck at making description, so if you have any question,you can DM me on Discord.
 
