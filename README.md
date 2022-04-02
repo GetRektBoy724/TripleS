@@ -1,31 +1,47 @@
 # TripleS - Extracting Syscall Stub, Modernized
-TripleS or 3S is short for Syscall Stub Stealer. It freshly "steal" syscall stub straight from the disk. You can use TripleS for evading userland hooks from EDRs/AVs.TripleS doesnt invoke any unmanaged API, its all .NET's managed function. I cant say that its better than D/Invoke's GetSyscallStub, but in my opinion, its better.
-Anyway, I suck at making description, so if you have any question,you can DM me on Discord.
-
-## Story
-I always hate the idea of hard-coding syscall stub on our malware, cause syscall is version dependent, and its kinda complicated to implement it on your code. And after I know that D/Invoke has a function to get the syscall stub from the disk, I challenged myself, can I make one too? And can I make it even better? Well, this is the result of that challenge. 
+TripleS or 3S is short for Syscall Stub Stealer. It freshly "steal" syscall stub straight from the disk. You can use TripleS for evading userland hooks from EDRs/AVs. TripleS doesnt invoke any unmanaged API, its all .NET's managed function. I should rename this program tho, since it doesnt use stubs anymore (v4), instead, it only collects syscall IDs.
 
 ## Usage
 1. Create a new instance of TripleS
 ```
 TripleS syscallstealer = new TripleS();
 ```
-2. Steal the syscall stub that you want (you can steal more syscall later on without creating a new instance again)
+2. Prepare gate space
 ```
-string[] requiredSyscalls = { "NtProtectVirtualMemory", "NtAllocateVirtualMemory", "NtCreateThreadEx", "NtWaitForSingleObject" };
-syscallstealer.StealSyscallStub(requiredSyscalls);
+bool result = syscallstealer.PrepareGateSpace();
+if (!result) {
+    Console.WriteLine("Failed to prepare gate space!");
+    return;
+}
 ```
-3. Use the syscall stub while its hot (dont forget to prepare the delegate ;) )
+3. Collect all the syscalls
 ```
-NTAVM fSyscallNTAVM = (NTAVM)Marshal.GetDelegateForFunctionPointer(syscallstealer.StubAddressTable["NtAllocateVirtualMemory"], typeof(NTAVM));
-NTPVM fSyscallNTPVM = (NTPVM)Marshal.GetDelegateForFunctionPointer(syscallstealer.StubAddressTable["NtProtectVirtualMemory"], typeof(NTPVM));
-NTCTE fSyscallNTCTE = (NTCTE)Marshal.GetDelegateForFunctionPointer(syscallstealer.StubAddressTable["NtCreateThreadEx"], typeof(NTCTE));
-NTWFSO fSyscallNTWFSO = (NTWFSO)Marshal.GetDelegateForFunctionPointer(syscallstealer.StubAddressTable["NtWaitForSingleObject"], typeof(NTWFSO));
+syscallstealer.CollectAllSyscalls(); // the syscall informations will be stored on the TripleS object
+if (!syscallstealer.IsSyscallReady) {
+    Console.WriteLine("Failed to collect syscall!");
+    return;
+}
 ```
-If you still confused ,you can take a look at `main` function from `UsageExample` class,its a local shellcode injector function with TripleS implemented. This code uses C# 5,so it can be compiled with the built-in CSC from Windows 10. 
-
-![TripleSUsageExample](https://user-images.githubusercontent.com/41237415/133930487-3f9c570a-73b1-4ca1-a47c-c5bc95233027.png)
+4. Initialize the delegates
+```
+NTAVMDelegate NTAVM = (NTAVMDelegate)Marshal.GetDelegateForFunctionPointer(syscallstealer.GatePositionAddress, typeof(NTAVMDelegate));
+NTCTEDelegate NTCTE = (NTCTEDelegate)Marshal.GetDelegateForFunctionPointer(syscallstealer.GatePositionAddress, typeof(NTCTEDelegate));
+NTPVMDelegate NTPVM = (NTPVMDelegate)Marshal.GetDelegateForFunctionPointer(syscallstealer.GatePositionAddress, typeof(NTPVMDelegate));
+NTWFSODelegate NTWFSO = (NTWFSODelegate)Marshal.GetDelegateForFunctionPointer(syscallstealer.GatePositionAddress, typeof(NTWFSODelegate));
+```
+5. Use it!
+```
+IntPtr ProcessHandle = new IntPtr(-1); // pseudo-handle for current process
+IntPtr ShellcodeBytesLength = new IntPtr(ShellcodeBytes.Length);
+IntPtr AllocationAddress = new IntPtr();
+IntPtr ZeroBitsThatZero = IntPtr.Zero;
+UInt32 AllocationTypeUsed = (UInt32)AllocationType.Commit | (UInt32)AllocationType.Reserve;
+Console.WriteLine("[*] Allocating memory...");
+syscallstealer.Gate(NTAVMHash); // dont forget to set the gate to your destination function ;)
+NTAVM(ProcessHandle, ref AllocationAddress, ZeroBitsThatZero, ref ShellcodeBytesLength, AllocationTypeUsed, 0x04);
+```
+If you still confused, you can take a look at `Main` function from `UsageExample` class, its a local shellcode injector function with TripleS implemented. This code uses C# 5, so it can be compiled with the built-in CSC from Windows 10. 
 
 ## Note
 - If you want to copy the code,Please dont forget to credit me.
-- Github dont like my Sublime indentation settings so dont roast me please.
+- Github doesn't like my Sublime Text indentation settings, so if you see some "weirdness" on the indentation, Im sorry.
